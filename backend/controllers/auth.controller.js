@@ -7,7 +7,7 @@ export const signup = async(req, res)=>{
     
         try{
             if(!email|| !password || !name){
-                throw new Error("All fields are required");
+               //throw new Error("All fields are required");
             }
             const userAlraedyExists = await User.findOne({email});
 
@@ -21,7 +21,7 @@ export const signup = async(req, res)=>{
                 password: hashedPassword,
                 name,
                 verificationToken, 
-                verificationTokenExpiresAt: Date.now() + 24 * 60 * 100 // 24hours
+                verificationTokenExpiresAt: Date.now() + 24 * 60 * 1000 // 24hours
             })
 
         }catch(error){
