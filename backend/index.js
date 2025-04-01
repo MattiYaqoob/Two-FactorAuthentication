@@ -6,11 +6,11 @@ dontenv.config()
 const app = express();
 const PORT = process.env.PORT || 5001
 
-
-app.use("/api/auth", authRoutes)
 app.use(express.json()); // allows us to parse incming requste : req.body
+app.use("/api/auth", authRoutes)
 
-app.listen(PORT,()=>{
+
+app.listen(PORT, () => {
     connectDB();
     console.log("Server is running on port", PORT)
 })
