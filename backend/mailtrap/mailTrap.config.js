@@ -1,10 +1,19 @@
 import { MailtrapClient } from "mailtrap";
 import dotenv from "dotenv";
+import AWS from "aws-sdk"
 
 dotenv.config();
 
-const TOKEN = process.env.MAILTRAP_TOKEN;
-const ENDPOINT = process.env.MAILTRAP_ENDPOINT;
+// const TOKEN = process.env.MAILTRAP_TOKEN;
+// const ENDPOINT = process.env.MAILTRAP_ENDPOINT;
+
+const SES_CONFIG = {
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION,
+}
+
+const AWS_SES = new AWS.SES(SES_CONFIG);
 
 export const mailtrapclient = new MailtrapClient({
   token: TOKEN,
@@ -12,8 +21,8 @@ export const mailtrapclient = new MailtrapClient({
 });
 
 export const sender = {
-  email: "hello@demomailtrap.co",
-  name: "Mailtrap Test",
+  email: "matiyaqoobal@gmail.com",
+  name: "AWS-Email",
 };
 
 // const recipients = [
