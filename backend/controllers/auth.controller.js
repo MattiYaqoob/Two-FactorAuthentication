@@ -247,6 +247,11 @@ export const checkAuth = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("Error with reset auth:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
 
     }
 }
