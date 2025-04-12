@@ -134,12 +134,24 @@ export const login = async (req, res) => {
         })
     }
 }
-export const logout = async (res) => {
-    res.clearCookie("token");
-    res.status(200).json({
-        success: true, message: "Logged out successfully"
-    });
-}
+export const logout = async (req, res) => {
+    try {
+        
+        res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict" });
+
+       
+        res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
+        });
+    } catch (error) {
+        console.error("Logout error:", error);
+        res.status(500).json({
+            success: false,
+            message: "An error occurred during logout"
+        });
+    }
+};
 
 export const frogotPassword = async (req, res) => {
     const { email } = req.body;
