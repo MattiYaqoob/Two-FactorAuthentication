@@ -5,6 +5,7 @@ import crypto from "crypto";
 import bcryptjs from "bcryptjs"
 
 
+
 export const signup = async (req, res) => {
     const { email, password, name } = req.body;
     try {
@@ -206,7 +207,7 @@ export const resetPassword = async (req, res) => {
           message: "Invalid or expired reset token",
         });
       }
-  
+      await sendResetSuccessEmail(user.email);
       // update password
       const hashedPassword = await bcryptjs.hash(password, 10);
       user.password = hashedPassword;

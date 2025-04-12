@@ -1,5 +1,5 @@
 import { AWS_SES, sender } from "./mailTrap.config.js";
-import { PASSWORD_RESET_REQUEST_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE } from "./emailTemplates.js";
+import { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE } from "./emailTemplates.js";
 
 const sendEmail = async (toEmail, subject, htmlBody) => {
   const params = {
@@ -68,10 +68,7 @@ export const sendPasswordResetEmail = async (email, resetURL) => {
 
 
 export const sendResetSuccessEmail = async (email) => {
-  const html = `
-    <h1>Password Reset Successful</h1>
-    <p>Your password has been updated successfully.</p>
-  `;
+  const html = PASSWORD_RESET_SUCCESS_TEMPLATE;
 
   try {
     const response = await sendEmail(email, "Password Reset Successful", html);
