@@ -5,9 +5,8 @@ export const verifyToken = (req, res, next) => {
     if (!token) return res.status(401).json({ success: false, message: "Unauthorized- no token probided" });
 
     try {
-        console.log("test1")
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
+    
         if (!decoded) return res.status(401).json({ success: false, message: "Unauthorized- no invalid token" });
 
         req.userId = decoded.userId;

@@ -101,6 +101,8 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        const TEN_HOURS = 10 * 60 * 60 * 1000;
+        console.log(TEN_HOURS)
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({
@@ -113,10 +115,15 @@ export const login = async (req, res) => {
                 status: false, message: "invaid credentials"
             });
         }
+       
 
         generateTokenAndSetCookie(res, user._id);
-
-        user.lastLogin = new Date();
+        const now = new Date();
+       
+        if(user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS){
+            res.clearCookie("token");
+        }
+        user.lastLogin = now
         await user.save();
 
         res.status(200).json({
@@ -127,7 +134,7 @@ export const login = async (req, res) => {
                 password: undefined
             },
         })
-        process.env.JWT_SECRET,{expiresIn: "10h" }
+        
     } catch (error) {
         console.log("Error in login", error);
         res.status(500).json({
@@ -136,19 +143,21 @@ export const login = async (req, res) => {
         })
     }
 }
-export const logout = async (res) => {
+export const logout = async (req, res) => {
     try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict"
+        });
 
-        res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict" });
-
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Logged out successfully"
         });
     } catch (error) {
         console.error("Logout error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: "An error occurred during logout"
         });
