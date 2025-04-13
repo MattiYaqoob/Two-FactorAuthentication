@@ -102,7 +102,8 @@ export const login = async (req, res) => {
 
     try {
         const TEN_HOURS = 10 * 60 * 60 * 1000;
-        console.log(TEN_HOURS)
+        const now = new Date();
+
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(400).json({
@@ -116,10 +117,8 @@ export const login = async (req, res) => {
             });
         }
        
-
         generateTokenAndSetCookie(res, user._id);
-        const now = new Date();
-       
+        
         if(user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS){
             res.clearCookie("token");
         }
