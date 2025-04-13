@@ -1,11 +1,14 @@
 import { AWS_SES, sender } from "./mailTrap.config.js";
+import { SendEmailCommand } from "@aws-sdk/client-ses";
 import { PASSWORD_RESET_REQUEST_TEMPLATE, PASSWORD_RESET_SUCCESS_TEMPLATE, VERIFICATION_EMAIL_TEMPLATE } from "./emailTemplates.js";
+
+
 
 const sendEmail = async (toEmail, subject, htmlBody) => {
   const params = {
-    Source: sender.email, 
+    Source: sender.email,
     Destination: {
-      ToAddresses: [toEmail], 
+      ToAddresses: [toEmail],
     },
     Message: {
       Subject: {
@@ -21,8 +24,8 @@ const sendEmail = async (toEmail, subject, htmlBody) => {
     },
   };
 
-
-  return AWS_SES.sendEmail(params).promise();
+  const command = new SendEmailCommand(params);
+  return AWS_SES.send(command); 
 };
 
 

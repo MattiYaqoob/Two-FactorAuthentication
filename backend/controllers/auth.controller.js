@@ -31,7 +31,7 @@ export const signup = async (req, res) => {
             verificationToken,
             verificationTokenExpiresAt: Date.now() + 24 * 60 * 1000 // 24hours
         })
-        console.log(user)
+        
 
         await user.save();
 
@@ -127,6 +127,7 @@ export const login = async (req, res) => {
                 password: undefined
             },
         })
+        process.env.JWT_SECRET,{expiresIn: "10h" }
     } catch (error) {
         console.log("Error in login", error);
         res.status(500).json({
@@ -135,7 +136,7 @@ export const login = async (req, res) => {
         })
     }
 }
-export const logout = async (req, res) => {
+export const logout = async (res) => {
     try {
 
         res.clearCookie("token", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "Strict" });
@@ -235,10 +236,12 @@ export const resetPassword = async (req, res) => {
 export const checkAuth = async (req, res) => {
     try {
         const user = await User.findById(req.userId);
+        console.log("test2")
         if (!user) {
             return res.status(400).json({ success: false, message: "User not found" });
         }
 
+        
         res.status(200).json({
             success: true, user: {
                 ...user._doc,
@@ -255,3 +258,4 @@ export const checkAuth = async (req, res) => {
 
     }
 }
+
