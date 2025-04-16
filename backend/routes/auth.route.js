@@ -6,7 +6,9 @@ import {
     verifyEmail,
     frogotPassword,
     resetPassword,
-    checkAuth
+    checkAuth,
+    verifyTwoFactorCode,
+    setupTwoFactor
 } from '../controllers/auth.controller.js';
 import { verifyToken } from "../middleware/verifyToken.js";
 
@@ -18,6 +20,10 @@ router.get("/check-auth", verifyToken, checkAuth)
 router.post("/signup", signup)
 
 router.post("/login", login)
+
+router.post("/verify-2fa", verifyTwoFactorCode);
+
+router.post("/setup-2fa", setupTwoFactor);
 
 router.post("/logout", logout)
 

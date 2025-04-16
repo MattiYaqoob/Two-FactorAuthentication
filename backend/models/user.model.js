@@ -12,7 +12,14 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: true 
+        required: true
+    },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorSecret: {
+        type: String
     },
     lastLogin: {
         type: Date,

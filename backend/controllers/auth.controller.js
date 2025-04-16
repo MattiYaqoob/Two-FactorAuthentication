@@ -1,8 +1,10 @@
 import { User } from '../models/user.model.js'
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendResetSuccessEmail } from '../mailtrap/emails.js';
+import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendResetSuccessEmail  } from '../mailtrap/emails.js';
 import crypto from "crypto";
 import bcryptjs from "bcryptjs"
+import speakeasy from "speakeasy";
+import qrcode from "qrcode";
 
 
 
@@ -31,7 +33,7 @@ export const signup = async (req, res) => {
             verificationToken,
             verificationTokenExpiresAt: Date.now() + 24 * 60 * 1000 // 24hours
         })
-        
+
 
         await user.save();
 
@@ -116,10 +118,18 @@ export const login = async (req, res) => {
                 status: false, message: "invaid credentials"
             });
         }
-       
+
+        if (user.twoFactorEnabled) {
+            return res.status(200).json({
+                success: true,
+                message: "2FA code required",
+                step: "2FA_REQUIRED",
+            });
+        }
+
         generateTokenAndSetCookie(res, user._id);
-        
-        if(user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS){
+
+        if (user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS) {
             res.clearCookie("token");
         }
         user.lastLogin = now
@@ -130,10 +140,12 @@ export const login = async (req, res) => {
             message: "Logged in successfully",
             user: {
                 ...user._doc,
-                password: undefined
+                password: undefined,
+                twoFactorSecret: undefined,
             },
         })
         
+
     } catch (error) {
         console.log("Error in login", error);
         res.status(500).json({
@@ -249,7 +261,7 @@ export const checkAuth = async (req, res) => {
             return res.status(400).json({ success: false, message: "User not found" });
         }
 
-        
+
         res.status(200).json({
             success: true, user: {
                 ...user._doc,
@@ -267,3 +279,77 @@ export const checkAuth = async (req, res) => {
     }
 }
 
+export const verifyTwoFactorCode = async (req, res) => {
+    const { userId, token } = req.body;
+
+    try {
+        const user = await User.findById(userId);
+        if (!user || !user.twoFactorSecret) {
+            return res.status(400).json({
+                success: false,
+                message: "2FA is not set up for this user"
+            });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (!verified) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid or expired 2FA token"
+            });
+        }
+
+        
+        return res.status(200).json({
+            success: true,
+            message: "2FA verified successfully"
+        });
+
+    } catch (error) {
+        console.error("2FA verification error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error verifying 2FA code"
+        });
+    }
+};
+
+export const setupTwoFactor = async (req, res) => {
+    const { userId } = req.body;
+  
+    try {
+      const secret = speakeasy.generateSecret({
+        name: "MyApp (2FA)",
+      });
+  
+    
+      const user = await User.findById(userId);
+      user.twoFactorSecret = secret.base32;
+      await user.save();
+  
+      
+      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
+        if (err) {
+          return res.status(500).json({ success: false, message: "Failed to generate QR code" });
+        }
+  
+        res.status(200).json({
+          success: true,
+          message: "2FA setup complete",
+          qrCode: data_url, 
+          secret: secret.base32, 
+        });
+      });
+    } catch (error) {
+      console.error("2FA setup error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to set up 2FA"
+      });
+    }
+  };
