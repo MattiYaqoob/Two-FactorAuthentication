@@ -77,6 +77,7 @@ export const verifyEmail = async (req, res) => {
         user.isVerified = true;
         user.verificationToken = undefined;
         user.verificationTokenExpiresAt = undefined;
+        
 
         await user.save();
 
@@ -124,8 +125,20 @@ export const login = async (req, res) => {
                 success: true,
                 message: "2FA code required",
                 step: "2FA_REQUIRED",
+                twoFactorEnabled: true,
+                userId: user._id
             });
         }
+
+        if (!user.twoFactorEnabled) {
+            return res.status(200).json({
+                success: true,
+                message: "2FA code required",
+                step: "2FA_REQUIRED",
+                setupTwoFactorRequired: true,
+                userId: user._id
+            });
+        } 
 
         generateTokenAndSetCookie(res, user._id);
 
@@ -255,18 +268,44 @@ export const resetPassword = async (req, res) => {
 
 export const checkAuth = async (req, res) => {
     try {
-        const user = await User.findById(req.userId);
-        console.log("test2")
-        if (!user) {
-            return res.status(400).json({ success: false, message: "User not found" });
+        // const user = await User.findById(req.userId);
+
+        // if (!user) {
+        //     return res.status(400).json({ success: false, message: "User not found" });
+        // }
+
+        // res.status(200).json({
+        //     success: true, user: {
+        //         ...user._doc,
+        //         password: undefined
+        //     }
+        // });
+
+        const userId = req.userId;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized - No user ID provided",
+            });
         }
 
+        const user = await User.findById(userId);
+
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
 
         res.status(200).json({
-            success: true, user: {
+            success: true,
+            user: {
                 ...user._doc,
-                password: undefined
-            }
+                password: undefined, 
+            },
         });
 
     } catch (error) {

@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema({
     twoFactorSecret: {
         type: String
     },
+    twoFactorRequired: {
+        type: Boolean,
+        default: false
+    },
     lastLogin: {
         type: Date,
         default: Date.now
