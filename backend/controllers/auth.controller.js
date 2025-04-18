@@ -113,33 +113,33 @@ export const login = async (req, res) => {
                 status: false, message: "Invalid credentials"
             });
         }
+       
         const isPasswordValid = await bcryptjs.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({
                 status: false, message: "invaid credentials"
             });
         }
-
+       
         if (user.twoFactorEnabled) {
             return res.status(200).json({
                 success: true,
                 message: "2FA code required",
                 step: "2FA_REQUIRED",
-                twoFactorEnabled: true,
-                userId: user._id
+                userId: user._id,
             });
         }
-
+        
         if (!user.twoFactorEnabled) {
             return res.status(200).json({
-                success: true,
-                message: "2FA code required",
-                step: "2FA_REQUIRED",
-                setupTwoFactorRequired: true,
-                userId: user._id
+              success: true,
+              message: "Please set up 2FA",
+              setupTwoFactorRequired: true,
+              userId: user._id,
             });
-        } 
-
+          }
+   
+        console.log("test1")
         generateTokenAndSetCookie(res, user._id);
 
         if (user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS) {
@@ -151,10 +151,10 @@ export const login = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
+            token,
             user: {
                 ...user._doc,
                 password: undefined,
-                twoFactorSecret: undefined,
             },
         })
         
@@ -268,18 +268,6 @@ export const resetPassword = async (req, res) => {
 
 export const checkAuth = async (req, res) => {
     try {
-        // const user = await User.findById(req.userId);
-
-        // if (!user) {
-        //     return res.status(400).json({ success: false, message: "User not found" });
-        // }
-
-        // res.status(200).json({
-        //     success: true, user: {
-        //         ...user._doc,
-        //         password: undefined
-        //     }
-        // });
 
         const userId = req.userId;
 
@@ -305,6 +293,7 @@ export const checkAuth = async (req, res) => {
             user: {
                 ...user._doc,
                 password: undefined, 
+                twoFactorSecret: undefined
             },
         });
 
@@ -333,8 +322,14 @@ export const verifyTwoFactorCode = async (req, res) => {
         const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret,
             encoding: 'base32',
-            token: token
+            token: token,
+            
         });
+
+        if(verified){
+            user.twoFactorEnabled = true,
+            generateTokenAndSetCookie(res, user._id);
+        }
 
         if (!verified) {
             return res.status(401).json({
@@ -346,7 +341,8 @@ export const verifyTwoFactorCode = async (req, res) => {
         
         return res.status(200).json({
             success: true,
-            message: "2FA verified successfully"
+            message: "2FA verified successfully",
+            
         });
 
     } catch (error) {
