@@ -120,7 +120,7 @@ export const login = async (req, res) => {
                 status: false, message: "invaid credentials"
             });
         }
-       
+
         if (user.twoFactorEnabled) {
             return res.status(200).json({
                 success: true,
@@ -129,6 +129,7 @@ export const login = async (req, res) => {
                 userId: user._id,
             });
         }
+        generateTokenAndSetCookie(res, user._id);
         
         if (!user.twoFactorEnabled) {
             return res.status(200).json({
@@ -139,8 +140,7 @@ export const login = async (req, res) => {
             });
           }
    
-        console.log("test1")
-        generateTokenAndSetCookie(res, user._id);
+
 
         if (user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS) {
             res.clearCookie("token");
@@ -355,9 +355,19 @@ export const verifyTwoFactorCode = async (req, res) => {
 };
 
 export const setupTwoFactor = async (req, res) => {
-    const { userId } = req.body;
-  
     try {
+        const userId = req.userId;
+
+        if (!userId) {
+            console.log("userID", userId)
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized - No user ID provided",
+            });
+        }
+
+      
+
       const secret = speakeasy.generateSecret({
         name: "MyApp (2FA)",
       });
@@ -365,6 +375,7 @@ export const setupTwoFactor = async (req, res) => {
     
       const user = await User.findById(userId);
       user.twoFactorSecret = secret.base32;
+      user.twoFactorEnabled == true;
       await user.save();
   
       
