@@ -1,6 +1,6 @@
 import { User } from '../models/user.model.js'
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendResetSuccessEmail  } from '../mailtrap/emails.js';
+import { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendResetSuccessEmail } from '../mailtrap/emails.js';
 import crypto from "crypto";
 import bcryptjs from "bcryptjs"
 import speakeasy from "speakeasy";
@@ -77,7 +77,7 @@ export const verifyEmail = async (req, res) => {
         user.isVerified = true;
         user.verificationToken = undefined;
         user.verificationTokenExpiresAt = undefined;
-        
+
 
         await user.save();
 
@@ -113,7 +113,7 @@ export const login = async (req, res) => {
                 status: false, message: "Invalid credentials"
             });
         }
-       
+
         const isPasswordValid = await bcryptjs.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({
@@ -121,26 +121,26 @@ export const login = async (req, res) => {
             });
         }
 
-        if (user.twoFactorEnabled) {
-            return res.status(200).json({
-                success: true,
-                message: "2FA code required",
-                step: "2FA_REQUIRED",
-                userId: user._id,
-            });
-        }
-        generateTokenAndSetCookie(res, user._id);
-        
-        if (!user.twoFactorEnabled) {
-            return res.status(200).json({
-              success: true,
-              message: "Please set up 2FA",
-              setupTwoFactorRequired: true,
-              userId: user._id,
-            });
-          }
-   
+        user.twoFactorRequired = true;
 
+        // if (user.twoFactorEnabled) {
+        //     return res.status(200).json({
+        //         success: true,
+        //         message: "2FA code required",
+        //         step: "2FA_REQUIRED",
+        //         userId: user._id,
+        //     });
+        // }
+        // //generateTokenAndSetCookie(res, user._id);
+
+        // if (!user.twoFactorEnabled) {
+        //     return res.status(200).json({
+        //         success: true,
+        //         message: "Please set up 2FA",
+        //         twoFactorRequired: true,
+        //         userId: user._id,
+        //     });
+        // }
 
         if (user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS) {
             res.clearCookie("token");
@@ -151,13 +151,12 @@ export const login = async (req, res) => {
         res.status(200).json({
             success: true,
             message: "Logged in successfully",
-            token,
             user: {
                 ...user._doc,
                 password: undefined,
             },
         })
-        
+
 
     } catch (error) {
         console.log("Error in login", error);
@@ -292,7 +291,7 @@ export const checkAuth = async (req, res) => {
             success: true,
             user: {
                 ...user._doc,
-                password: undefined, 
+                password: undefined,
                 twoFactorSecret: undefined
             },
         });
@@ -323,12 +322,12 @@ export const verifyTwoFactorCode = async (req, res) => {
             secret: user.twoFactorSecret,
             encoding: 'base32',
             token: token,
-            
+
         });
 
-        if(verified){
+        if (verified) {
             user.twoFactorEnabled = true,
-            generateTokenAndSetCookie(res, user._id);
+                generateTokenAndSetCookie(res, user._id);
         }
 
         if (!verified) {
@@ -338,11 +337,11 @@ export const verifyTwoFactorCode = async (req, res) => {
             });
         }
 
-        
+
         return res.status(200).json({
             success: true,
             message: "2FA verified successfully",
-            
+
         });
 
     } catch (error) {
@@ -356,7 +355,9 @@ export const verifyTwoFactorCode = async (req, res) => {
 
 export const setupTwoFactor = async (req, res) => {
     try {
-        const userId = req.userId;
+        // const userId = req.userId;
+
+        const { userId } = req.body;
 
         if (!userId) {
             console.log("userID", userId)
@@ -365,37 +366,41 @@ export const setupTwoFactor = async (req, res) => {
                 message: "Unauthorized - No user ID provided",
             });
         }
+        const user = await User.findById(userId);
 
-      
+     
+        let secret;
 
-      const secret = speakeasy.generateSecret({
-        name: "MyApp (2FA)",
-      });
-  
-    
-      const user = await User.findById(userId);
-      user.twoFactorSecret = secret.base32;
-      user.twoFactorEnabled == true;
-      await user.save();
-  
-      
-      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-        if (err) {
-          return res.status(500).json({ success: false, message: "Failed to generate QR code" });
+        if (user.twoFactorRequired) {
+            secret = speakeasy.generateSecret({
+                name: "MyApp (2FA)",
+            });
+        
+            user.twoFactorSecret = secret.base32;
+            user.twoFactorEnabled = true;
+            await user.save();
         }
-  
-        res.status(200).json({
-          success: true,
-          message: "2FA setup complete",
-          qrCode: data_url, 
-          secret: secret.base32, 
+
+        if (!user.twoFactorRequired) {
+            return res.status(401).json({ success: false, message: "you have to login" });
+        }
+        qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: "Failed to generate QR code" });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: "2FA setup complete",
+                qrCode: data_url,
+                secret: secret.base32,
+            });
         });
-      });
     } catch (error) {
-      console.error("2FA setup error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to set up 2FA"
-      });
+        console.error("2FA setup error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to set up 2FA"
+        });
     }
-  };
+};

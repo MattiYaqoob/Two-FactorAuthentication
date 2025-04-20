@@ -23,7 +23,7 @@ router.post("/login", login)
 
 router.post("/verify-2fa", verifyTwoFactorCode);
 
-router.post("/setup-2fa", verifyToken, setupTwoFactor);
+router.post("/setup-2fa", setupTwoFactor);
 
 router.post("/logout", logout)
 
