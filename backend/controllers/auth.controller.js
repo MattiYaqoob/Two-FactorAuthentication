@@ -168,6 +168,16 @@ export const login = async (req, res) => {
 }
 export const logout = async (req, res) => {
     try {
+
+        const userId = req.userId;
+        const user = await User.findById(userId);
+
+        if (user) {
+            user.twoFactorEnabled = false;
+            user.twoFactorRequired = false;
+            await user.save();
+        }
+
         res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -279,7 +289,6 @@ export const checkAuth = async (req, res) => {
 
         const user = await User.findById(userId);
 
-
         if (!user) {
             return res.status(404).json({
                 success: false,
@@ -355,12 +364,9 @@ export const verifyTwoFactorCode = async (req, res) => {
 
 export const setupTwoFactor = async (req, res) => {
     try {
-        // const userId = req.userId;
-
         const { userId } = req.body;
 
         if (!userId) {
-            console.log("userID", userId)
             return res.status(401).json({
                 success: false,
                 message: "Unauthorized - No user ID provided",

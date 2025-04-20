@@ -25,7 +25,7 @@ router.post("/verify-2fa", verifyTwoFactorCode);
 
 router.post("/setup-2fa", setupTwoFactor);
 
-router.post("/logout", logout)
+router.post("/logout", verifyToken ,logout)
 
 router.post("/verify-email", verifyEmail)
 
