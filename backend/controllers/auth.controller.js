@@ -108,6 +108,12 @@ export const login = async (req, res) => {
         const now = new Date();
 
         const user = await User.findOne({ email });
+
+        if(user.isVerified == false){
+            return res.status(400).json({
+                status: false, message: "The acount is not verified "
+            }); 
+        }
         if (!user) {
             return res.status(400).json({
                 status: false, message: "Invalid credentials"
@@ -123,24 +129,6 @@ export const login = async (req, res) => {
 
         user.twoFactorRequired = true;
 
-        // if (user.twoFactorEnabled) {
-        //     return res.status(200).json({
-        //         success: true,
-        //         message: "2FA code required",
-        //         step: "2FA_REQUIRED",
-        //         userId: user._id,
-        //     });
-        // }
-        // //generateTokenAndSetCookie(res, user._id);
-
-        // if (!user.twoFactorEnabled) {
-        //     return res.status(200).json({
-        //         success: true,
-        //         message: "Please set up 2FA",
-        //         twoFactorRequired: true,
-        //         userId: user._id,
-        //     });
-        // }
 
         if (user.lastLogin && now - new Date(user.lastLogin) > TEN_HOURS) {
             res.clearCookie("token");
@@ -374,14 +362,14 @@ export const setupTwoFactor = async (req, res) => {
         }
         const user = await User.findById(userId);
 
-     
+
         let secret;
 
         if (user.twoFactorRequired) {
             secret = speakeasy.generateSecret({
                 name: "MyApp (2FA)",
             });
-        
+
             user.twoFactorSecret = secret.base32;
             user.twoFactorEnabled = true;
             await user.save();
