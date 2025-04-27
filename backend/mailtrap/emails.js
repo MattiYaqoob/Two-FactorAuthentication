@@ -45,11 +45,11 @@ export const sendVerificationEmail = async (email, verificationToken) => {
 export const sendWelcomeEmail = async (email, name) => {
   const html = `
     <h1>Welcome, ${name}!</h1>
-    <p>Thanks for joining Klara. We're glad to have you!</p>
+    <p>Thanks for joining LUX. We're glad to have you!</p>
   `;
 
   try {
-    const response = await sendEmail(email, "Welcome to Klara", html);
+    const response = await sendEmail(email, "Welcome to LUX", html);
     console.log("Welcome email sent", response);
   } catch (error) {
     throw new Error(`Error sending welcome email: ${error.message}`);

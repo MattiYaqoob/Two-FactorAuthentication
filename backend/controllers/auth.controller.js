@@ -38,7 +38,7 @@ export const signup = async (req, res) => {
         await user.save();
 
         //jwt
-        generateTokenAndSetCookie(res, user._id);
+        //generateTokenAndSetCookie(res, user._id);
 
         await sendVerificationEmail(user.email, verificationToken);
 
@@ -109,10 +109,10 @@ export const login = async (req, res) => {
 
         const user = await User.findOne({ email });
 
-        if(user.isVerified == false){
+        if (user.isVerified == false) {
             return res.status(400).json({
                 status: false, message: "The acount is not verified "
-            }); 
+            });
         }
         if (!user) {
             return res.status(400).json({
@@ -138,11 +138,7 @@ export const login = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Logged in successfully",
-            user: {
-                ...user._doc,
-                password: undefined,
-            },
+            message: "two Factor Required",
         })
 
 
@@ -327,13 +323,14 @@ export const verifyTwoFactorCode = async (req, res) => {
                 generateTokenAndSetCookie(res, user._id);
         }
 
+
         if (!verified) {
             return res.status(401).json({
                 success: false,
                 message: "Invalid or expired 2FA token"
             });
         }
-
+        await user.save();
 
         return res.status(200).json({
             success: true,
@@ -371,7 +368,6 @@ export const setupTwoFactor = async (req, res) => {
             });
 
             user.twoFactorSecret = secret.base32;
-            user.twoFactorEnabled = true;
             await user.save();
         }
 
